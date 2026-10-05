@@ -57,7 +57,7 @@ mybatis-plus:
   type-aliases-package: com.cinfly.dadaxiaopu.entity # 别名扫描包
 logging:
   level:
-    com.cinfly.dadaxiaopu: debug
+    com.cinfly.dadaxiaopu: info
 
 # knife4j配置
 knife4j:

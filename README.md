@@ -183,7 +183,7 @@ mvn spring-boot:run
 ## 目录结构
 
 ```
-src/main/java/com/hmdp/
+src/main/java/com/cinfly/dadaxiaopu/
 ├── config/          # MQ 拓扑、Redis、MVC、Swagger 等配置
 ├── constant/        # Redis Key 等常量
 ├── controller/      # REST 接口层

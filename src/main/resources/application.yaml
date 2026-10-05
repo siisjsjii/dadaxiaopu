@@ -1,0 +1,73 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: hmdp
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        time-between-eviction-runs: 10s
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+    # 发布确认：correlated 让 confirmCallback 能拿到 CorrelationData，从而在 nack 时找回原消息重发
+    publisher-confirm-type: correlated
+    # 开启 return 回调，配合下面的 mandatory，路由不到队列的消息才会退回给我们而不是被静默丢弃
+    publisher-returns: true
+    template:
+      mandatory: true
+      # 发不出去时不要阻塞，交给 confirm 回调异步处理
+      retry:
+        enabled: false
+    listener:
+      simple:
+        # 手动 ACK：正常处理完才确认，避免消费过程中进程挂掉导致消息丢失
+        acknowledge-mode: manual
+        # 一次只预取一条，防止一个消费者囤积大批消息
+        prefetch: 1
+        # 重试耗尽后拒绝消息且不重回队列 —— 这样才会进入死信交换机
+        default-requeue-rejected: false
+        retry:
+          # 【实测踩坑，勿轻易改回 true】
+          # 手动 ACK 模式下容器不会替消费者做 ack/nack，因此「容器级重试 + 重试耗尽自动拒绝」
+          # 这套机制在 MANUAL 模式下失效：重试耗尽后消息不会被 nack，而是一直 unacked，
+          # channel 关闭时重回队列，导致消息在 seckill.order.queue 里无限重投
+          # （既进不了死信也丢不掉，持续空转烧 CPU）。
+          # 所以重试与拒绝都改由消费者显式执行，见 SeckillOrderConsumer / SeckillTimeoutConsumer，
+          # 那里的 MAX_ATTEMPTS=3、退避 1s×2 与本段配置保持一致。
+          enabled: false
+          max-attempts: 3
+          initial-interval: 1000ms
+          multiplier: 2
+  jackson:
+    default-property-inclusion: non_null # JSON处理时忽略非空字段
+mybatis-plus:
+  type-aliases-package: com.hmdp.entity # 别名扫描包
+logging:
+  level:
+    com.hmdp: debug
+
+# knife4j配置
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN
+
+
+hmdp:
+  jwt:
+    secret: cinfly
+    ttl-minutes: 36000
+

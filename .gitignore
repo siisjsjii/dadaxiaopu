@@ -35,3 +35,6 @@ build/
 
 ##docs
 /docs/
+
+##AI 开发指引（仅本地保留，不纳入版本控制）
+CLAUDE.md
